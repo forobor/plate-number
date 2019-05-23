@@ -35,7 +35,7 @@ const testImage = async imagePath => {
 
     console.log(`File ${imagePath}`);
     console.log('Text:');
-    detections.forEach(text => console.log(text.boundingPoly));
+    detections.forEach(text => console.log(text.description));
 };
 
 const testFolder = folderName =>
@@ -52,5 +52,5 @@ const testFolder = folderName =>
         }
     });
 
-// testFolder('./assets/eu');
-testImage('./assets/original.jpg');
+// testFolder('./assets/vid');
+testImage('./assets/crop1.png');
