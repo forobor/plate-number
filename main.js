@@ -1,35 +1,56 @@
+const fs = require('fs');
+const vision = require('@google-cloud/vision');
+const sharp = require('sharp');
 
-/**
- * Copyright 2017, Google, Inc.
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
+const client = new vision.ImageAnnotatorClient();
 
-'use strict';
+const testImage = async imagePath => {
+    const [result] = await client.textDetection(imagePath);
+    const detections = result.textAnnotations;
 
-// [START vision_quickstart]
-async function quickstart() {
-  // Imports the Google Cloud client library
-  const vision = require('@google-cloud/vision');
+    const width = Math.abs(
+        detections[0].boundingPoly.vertices[0].x -
+            detections[0].boundingPoly.vertices[1].x
+    );
+    const height = Math.abs(
+        detections[0].boundingPoly.vertices[0].y -
+            detections[0].boundingPoly.vertices[2].y
+    );
 
-  // Creates a client
-  const client = new vision.ImageAnnotatorClient();
+    console.log(width, height);
+    sharp(imagePath)
+        .extract({
+            width: width,
+            height: height,
+            left: detections[0].boundingPoly.vertices[0].x,
+            top: detections[0].boundingPoly.vertices[0].y
+        })
+        .toFile('croppedImage.jpg')
+        .then(function(new_file_info) {
+            console.log('Image cropped and saved');
+        })
+        .catch(function(err) {
+            console.log('An error occured');
+        });
 
-  // Performs label detection on the image file
-  const [result] = await client.labelDetection('./pat.jpeg');
-  const labels = result.labelAnnotations;
-  console.log('Labels:');
-  labels.forEach(label => console.log(label));
-}
-// [END vision_quickstart]
+    console.log(`File ${imagePath}`);
+    console.log('Text:');
+    detections.forEach(text => console.log(text.boundingPoly));
+};
 
-quickstart().catch(console.error);
+const testFolder = folderName =>
+    fs.readdir(folderName, async (err, files) => {
+        if (err) return err;
+        for (const fileName of files) {
+            const [result] = await client.textDetection(
+                `${folderName}/${fileName}`
+            );
+            const detections = result.textAnnotations;
+            console.log('=====');
+            console.log(`File ${fileName}`);
+            detections.forEach(text => console.log(text.description));
+        }
+    });
+
+// testFolder('./assets/eu');
+testImage('./assets/original.jpg');
