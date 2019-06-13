@@ -400,5 +400,5 @@ item {
 }
 item {
   id: 91
-  display_name: "license_plate"
+  name: "license_plate"
 }
